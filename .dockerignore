@@ -1,0 +1,13 @@
+*
+!package.json
+!package-lock.json
+!config/
+!config/**
+!src/
+!src/**
+!public/
+!public/**
+!scripts/
+!scripts/start.cjs
+!LICENSE
+!NOTICE.md

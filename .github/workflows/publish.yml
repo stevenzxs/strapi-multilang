@@ -1,0 +1,96 @@
+name: Verify and publish image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Configuration tests
+        run: npm test
+      - uses: docker/setup-buildx-action@v3
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: strapi-multilang:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: PostgreSQL and admin smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          node scripts/generate-env.cjs
+          docker network create strapi-test
+          docker run -d --name postgres --network strapi-test --env-file .env \
+            -e POSTGRES_USER=strapi -e POSTGRES_DB=strapi \
+            -e POSTGRES_PASSWORD="$(sed -n 's/^DATABASE_PASSWORD=//p' .env)" postgres:18-alpine
+          ready=false
+          for i in {1..30}; do
+            if docker exec postgres pg_isready -U strapi -d strapi; then ready=true; break; fi
+            sleep 2
+          done
+          test "$ready" = true
+          docker run -d --name cms --network strapi-test --env-file .env \
+            -p 127.0.0.1:1337:1337 strapi-multilang:test
+          ready=false
+          for i in {1..60}; do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:1337/_health || true)" = 204 ]; then ready=true; break; fi
+            sleep 2
+          done
+          test "$ready" = true
+          test "$(docker exec cms id -u)" = 1001
+          curl --fail http://127.0.0.1:1337/admin/init | grep '"hasAdmin":false'
+          curl --fail http://127.0.0.1:1337/admin -o /tmp/admin.html
+          docker exec cms sh -c 'test -s build/index.html && ls build/zh-Hans*.js && touch public/uploads/.write-test && rm public/uploads/.write-test'
+          docker exec cms sh -c '! test -f .env'
+      - name: Diagnostic logs
+        if: failure()
+        run: |
+          docker logs cms || true
+          docker logs postgres || true
+      - name: Set image name
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - uses: docker/login-action@v3
+        if: startsWith(github.ref, 'refs/tags/v')
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha
+      - name: Publish verified image
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          provenance: true
+          sbom: true

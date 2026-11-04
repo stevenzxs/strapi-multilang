@@ -1,0 +1,42 @@
+name: strapi-multilang
+services:
+  strapi:
+    image: ghcr.io/stevenzxs/strapi-multilang:1.0.0
+    restart: unless-stopped
+    init: true
+    env_file: .env
+    ports:
+      - '127.0.0.1:1337:1337'
+    volumes:
+      - uploads:/opt/app/public/uploads
+      - app-tmp:/opt/app/.tmp
+      - migrations:/opt/app/database
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    mem_limit: 768m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+  postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:?set DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME:?set DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:?set DATABASE_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+volumes:
+  uploads:
+  app-tmp:
+  migrations:
+  postgres-data:
