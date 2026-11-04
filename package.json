@@ -1,6 +1,6 @@
 {
   "name": "strapi-multilang",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Community-packaged multilingual Strapi application. Not an official Strapi image.",
   "scripts": {
@@ -10,6 +10,7 @@
     "test": "node --test tests/*.test.cjs"
   },
   "dependencies": {
+    "@strapi/admin": "5.54.0",
     "@strapi/strapi": "5.54.0",
     "@strapi/plugin-users-permissions": "5.54.0",
     "pg": "8.20.0",
@@ -17,6 +18,16 @@
     "react-dom": "18.3.1",
     "react-router-dom": "6.30.3",
     "styled-components": "6.1.19"
+  },
+  "overrides": {
+    "@strapi/admin": "$@strapi/admin",
+    "@strapi/utils": "5.54.0",
+    "@strapi/logger": "5.54.0",
+    "@strapi/permissions": "5.54.0",
+    "@strapi/types": "5.54.0",
+    "@strapi/typescript-utils": "5.54.0",
+    "@strapi/data-transfer": "5.54.0",
+    "@strapi/database": "5.54.0"
   },
   "engines": { "node": ">=22.13.0 <23" }
 }

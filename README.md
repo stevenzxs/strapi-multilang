@@ -38,15 +38,15 @@ for remote databases (`DATABASE_SSL=true`, optional `DATABASE_SSL_CA`).
 
 ## Images and publishing
 
-Image: `ghcr.io/stevenzxs/strapi-multilang:1.0.0` (available after successful release).
+Image: `ghcr.io/stevenzxs/strapi-multilang:1.0.1` (available after successful release).
 Main-branch commits and PRs run configuration and Docker/PostgreSQL smoke tests.
 Pushing a `v1.0.0` tag builds, tests, then publishes through GitHub's short-lived
 `GITHUB_TOKEN`. Set the GHCR package visibility to Public for anonymous pulls.
 Production deployments should pin the resulting digest, not `latest`.
 
 ```sh
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.0.1
+git push origin v1.0.1
 ```
 
 Do not reuse version tags. Keep image release numbers separate from the bundled

@@ -1,7 +1,7 @@
 name: strapi-multilang
 services:
   strapi:
-    image: ghcr.io/stevenzxs/strapi-multilang:1.0.0
+    image: ghcr.io/stevenzxs/strapi-multilang:1.0.1
     restart: unless-stopped
     init: true
     env_file: .env
